@@ -35,27 +35,26 @@ fi
 # Check for .env file and create a template if it doesn't exist
 if [ ! -f .env ]; then
     echo "⚠️ .env file not found. Creating a template: .env"
-    echo "OPENAI_API_KEY=\"YOUR_API_KEY_HERE\"" > .env
-    echo "🔑 Please edit the .env file and add your OpenAI API Key."
+    echo "GOOGLE_API_KEY=\"YOUR_GOOGLE_API_KEY_HERE\"" > .env
+    echo "🔑 Please edit the .env file and add your Google API Key."
 fi
 
-# Check if OPENAI_API_KEY is set and not the placeholder
-# This uses grep and cut, ensure .env format is simple key="value"
-if grep -q 'OPENAI_API_KEY="YOUR_API_KEY_HERE"' .env || ! grep -q 'OPENAI_API_KEY' .env;
-    then
+# Check if GOOGLE_API_KEY is set and not the placeholder
+if grep -q 'GOOGLE_API_KEY="YOUR_GOOGLE_API_KEY_HERE"' .env || ! grep -q 'GOOGLE_API_KEY' .env;
+then
     echo ""
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    echo "!!! WARNING: OpenAI API Key is not configured or is a placeholder. !!!"
-    echo "!!! Please set your OPENAI_API_KEY in the .env file.             !!!"
-    echo "!!! The application may prompt for it or features will be limited. !!!"
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "!!! WARNING: Google API Key is not configured or is a placeholder.     !!!"
+    echo "!!! Please set your GOOGLE_API_KEY in the .env file.                 !!!"
+    echo "!!! The application may prompt for it or features will be limited.     !!!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     echo ""
 fi
 
-# Ensure static directory exists (though app.py reads from it, not writes)
+# Ensure static directory exists
 mkdir -p static
 
-echo "🌐 Launching Streamlit application on port 9000..."
+echo "🌍 Launching Streamlit application on port 9000..."
 echo "🔗 Access it at http://localhost:9000 (or your server's IP if deployed)"
 
 # Run Streamlit
