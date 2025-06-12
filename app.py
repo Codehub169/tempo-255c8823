@@ -120,7 +120,7 @@ def get_gemini_response(prompt_text, api_key, model_name="gemini-1.5-flash-lates
 # --- Main Application --- 
 def main():
     load_dotenv() 
-    st.set_page_config(page_title="Chat with PDF", page_icon="\\ud83d\\ncc4", layout="wide") # Fixed page_icon
+    st.set_page_config(page_title="Chat with PDF", page_icon="\ud83d\udcc4", layout="wide") # Fixed page_icon
     load_css("static/style.css")
 
     @st.cache_resource(show_spinner="Loading embedding model...")
@@ -182,9 +182,7 @@ def main():
         st.caption("App by Gemini Code Assist")
 
     # Main page layout
-    st.markdown("<h1 style='text-align: center; color: #1A73E8; font-family: Poppins, sans-serif;'>Chat With Your PDF 
-ud83d
-cac</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #1A73E8; font-family: Poppins, sans-serif;'>Chat With Your PDF \ud83d\udcac</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center;'>Upload a PDF, let it process, and ask questions to get insights instantly!</p>", unsafe_allow_html=True)
     
     # PDF Upload and Processing Section
@@ -245,9 +243,7 @@ cac</h1>", unsafe_allow_html=True)
                 st.markdown(user_question)
             
             if not st.session_state.google_api_key or st.session_state.google_api_key == "YOUR_GOOGLE_API_KEY_HERE":
-                error_msg = "Please enter your Google API Key in the sidebar to ask questions. 
-ud83d
-dd11"
+                error_msg = "Please enter your Google API Key in the sidebar to ask questions. \ud83d\udd11"
                 st.warning(error_msg)
                 st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
                 with st.chat_message("assistant"): # Also show this in chat
@@ -261,9 +257,7 @@ dd11"
                      st.markdown(error_msg)
             else:
                 with st.chat_message("assistant"):
-                    with st.spinner("Thinking... 
-ud83e
-dd14"):
+                    with st.spinner("Thinking... \ud83e\udd14"):
                         try:
                             # 1. Embed user question
                             question_embedding = embedding_model.encode([user_question], show_progress_bar=False)
