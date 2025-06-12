@@ -120,9 +120,7 @@ def get_gemini_response(prompt_text, api_key, model_name="gemini-1.5-flash-lates
 # --- Main Application --- 
 def main():
     load_dotenv() 
-    st.set_page_config(page_title="Chat with PDF", page_icon="
-ud83d
-cc4", layout="wide") # Fixed page_icon
+    st.set_page_config(page_title="Chat with PDF", page_icon="\\ud83d\\ncc4", layout="wide") # Fixed page_icon
     load_css("static/style.css")
 
     @st.cache_resource(show_spinner="Loading embedding model...")
