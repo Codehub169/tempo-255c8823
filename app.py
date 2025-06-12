@@ -54,13 +54,13 @@ def get_text_chunks(text):
     return chunks
 
 @st.cache_resource(show_spinner="Generating document embeddings...")
-def get_vector_store(_text_chunks, embedding_model_instance):
+def get_vector_store(_text_chunks, _embedding_model_instance):
     """Creates embeddings for text chunks and stores them in a FAISS vector store."""
     if not _text_chunks:
         st.warning("No text chunks to process for vector store.")
         return None
     try:
-        embeddings = embedding_model_instance.encode(_text_chunks, show_progress_bar=False)
+        embeddings = _embedding_model_instance.encode(_text_chunks, show_progress_bar=False)
         if not isinstance(embeddings, np.ndarray) or embeddings.ndim != 2:
             st.error(f"Embeddings are not in the expected format. Got shape: {embeddings.shape if isinstance(embeddings, np.ndarray) else type(embeddings)}")
             return None
@@ -120,7 +120,7 @@ def get_gemini_response(prompt_text, api_key, model_name="gemini-1.5-flash-lates
 # --- Main Application --- 
 def main():
     load_dotenv() 
-    st.set_page_config(page_title="Chat with PDF", page_icon="📄", layout="wide") # Fixed page_icon
+    st.set_page_config(page_title="Chat with PDF", page_icon="apping_handapping_handapping_handapping_hand", layout="wide") # Fixed page_icon
     load_css("static/style.css")
 
     @st.cache_resource(show_spinner="Loading embedding model...")
@@ -182,7 +182,7 @@ def main():
         st.caption("App by Gemini Code Assist")
 
     # Main page layout
-    st.markdown("<h1 style='text-align: center; color: #1A73E8; font-family: Poppins, sans-serif;'>Chat With Your PDF 📄</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #1A73E8; font-family: Poppins, sans-serif;'>Chat With Your PDF apping_handapping_handapping_handapping_hand</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center;'>Upload a PDF, let it process, and ask questions to get insights instantly!</p>", unsafe_allow_html=True)
     
     # PDF Upload and Processing Section
@@ -243,7 +243,7 @@ def main():
                 st.markdown(user_question)
             
             if not st.session_state.google_api_key or st.session_state.google_api_key == "YOUR_GOOGLE_API_KEY_HERE":
-                error_msg = "Please enter your Google API Key in the sidebar to ask questions. 🔑"
+                error_msg = "Please enter your Google API Key in the sidebar to ask questions. apping_handapping_hand"
                 st.warning(error_msg)
                 st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
                 with st.chat_message("assistant"): # Also show this in chat
@@ -257,7 +257,7 @@ def main():
                      st.markdown(error_msg)
             else:
                 with st.chat_message("assistant"):
-                    with st.spinner("Thinking... 🤔"):
+                    with st.spinner("Thinking... apping_handapping_hand"):
                         try:
                             # 1. Embed user question
                             question_embedding = embedding_model.encode([user_question], show_progress_bar=False)
