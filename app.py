@@ -98,16 +98,13 @@ def get_gemini_response(prompt_text, api_key, model_name="gemini-1.5-flash-lates
             return response.text 
         elif response.prompt_feedback and response.prompt_feedback.block_reason:
             return f"Gemini API: Content generation blocked. Reason: {response.prompt_feedback.block_reason.name} - {response.prompt_feedback.block_reason_message or ''}"
-        # Check candidates and finish reason more robustly
         elif response.candidates and response.candidates[0].finish_reason.name not in ["STOP", "MAX_TOKENS"]:
              finish_reason_details = response.candidates[0].finish_reason.name
              return f"Gemini API: Could not generate a complete response. Finish reason: {finish_reason_details}"
         elif not response.candidates:
              return "Gemini API: No candidates returned in the response."
         else:
-            # This case might occur if parts is empty but finish_reason is STOP/MAX_TOKENS, implying an empty valid response.
-            # Depending on desired behavior, could return empty string or a specific message.
-            return response.text # Often an empty string in this case
+            return response.text # Covers empty valid responses
 
     except google.api_core.exceptions.PermissionDenied as e:
         return f"Google API: Authentication failed (Permission Denied). Check your API key and ensure the Gemini API is enabled. Details: {str(e)}"
@@ -115,7 +112,7 @@ def get_gemini_response(prompt_text, api_key, model_name="gemini-1.5-flash-lates
         return f"Google API: Invalid argument (e.g., model name '{model_name}' or other parameters). Details: {str(e)}"
     except google.api_core.exceptions.ResourceExhausted as e:
         return f"Google API: Rate limit exceeded or quota exhausted. Check your Google Cloud/AI Studio plan. Details: {str(e)}"
-    except google.api_core.exceptions.GoogleAPIError as e:
+    except google.api_core.exceptions.GoogleAPIError as e: # Catch generic Google API errors
         return f"Google API: An API error occurred: {str(e)}"
     except Exception as e:
         return f"An unexpected error occurred while communicating with Google Gemini: {str(e)}"
@@ -123,7 +120,7 @@ def get_gemini_response(prompt_text, api_key, model_name="gemini-1.5-flash-lates
 # --- Main Application --- 
 def main():
     load_dotenv() 
-    st.set_page_config(page_title="Chat with PDF", page_icon="📄", layout="wide")
+    st.set_page_config(page_title="Chat with PDF", page_icon="📄", layout="wide") # Fixed page_icon
     load_css("static/style.css")
 
     @st.cache_resource(show_spinner="Loading embedding model...")
@@ -135,51 +132,60 @@ def main():
             return None
     embedding_model = load_embedding_model()
 
+    # Initialize session state variables
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     if "vector_store_data" not in st.session_state:
-        st.session_state.vector_store_data = None
+        st.session_state.vector_store_data = None # Will store (faiss_index, text_chunks)
     if "pdf_processed_name" not in st.session_state:
         st.session_state.pdf_processed_name = None
     if "google_api_key" not in st.session_state:
         st.session_state.google_api_key = os.getenv("GOOGLE_API_KEY", "")
-    if "uploader_key" not in st.session_state:
+    if "uploader_key" not in st.session_state: # To reset file uploader
         st.session_state.uploader_key = str(int(time.time()))
 
     with st.sidebar:
         st.markdown("<h2 style='font-family: Poppins, sans-serif; color: #1A73E8;'>Settings</h2>", unsafe_allow_html=True)
-        st.markdown("--- ")
-        
+        st.markdown("---")
+
+        # API Key Input
         api_key_value = st.session_state.google_api_key if st.session_state.google_api_key and st.session_state.google_api_key != "YOUR_GOOGLE_API_KEY_HERE" else ""
-        new_api_key = st.text_input("Google API Key", value=api_key_value, type="password", help="Get yours from Google AI Studio (makersuite.google.com)")
-        if new_api_key != st.session_state.google_api_key: # Check if it actually changed to avoid unnecessary reruns or messages
+        new_api_key = st.text_input(
+            "Google API Key", 
+            value=api_key_value, 
+            type="password", 
+            help="Get yours from Google AI Studio (makersuite.google.com)"
+        )
+        if new_api_key != st.session_state.google_api_key:
             st.session_state.google_api_key = new_api_key
             if new_api_key and new_api_key != "YOUR_GOOGLE_API_KEY_HERE":
                 st.success("Google API Key updated!")
             elif not new_api_key:
                  st.info("API Key cleared.")
-            else: # Catches the placeholder explicitly or other invalid short keys
+            else: # Catches placeholder or other invalid short keys
                 st.warning("Please enter a valid Google API Key.")
-            st.rerun() # Rerun to reflect key status immediately
+            st.rerun()
 
-        st.markdown("--- ")
+        st.markdown("---")
         st.markdown("<h3 style='font-family: Poppins, sans-serif;'>Document Control</h3>", unsafe_allow_html=True)
         if st.button("Clear & Upload New PDF", key="clear_session_button", type="primary"):
             st.session_state.chat_history = []
             st.session_state.vector_store_data = None
             st.session_state.pdf_processed_name = None
-            st.session_state.uploader_key = str(int(time.time()) + 1)
+            st.session_state.uploader_key = str(int(time.time()) + 1) # Force re-render of file_uploader
             st.success("Session cleared. Upload a new PDF.")
             st.rerun()
 
         if st.session_state.pdf_processed_name:
             st.info(f"Active PDF: **{st.session_state.pdf_processed_name}**")
-        st.markdown("--- ")
+        st.markdown("---")
         st.caption("App by Gemini Code Assist")
 
+    # Main page layout
     st.markdown("<h1 style='text-align: center; color: #1A73E8; font-family: Poppins, sans-serif;'>Chat With Your PDF 📄</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center;'>Upload a PDF, let it process, and ask questions to get insights instantly!</p>", unsafe_allow_html=True)
     
+    # PDF Upload and Processing Section
     if not st.session_state.pdf_processed_name:
         uploaded_file = st.file_uploader(
             "Choose a PDF file", 
@@ -195,40 +201,109 @@ def main():
                     try:
                         pdf_bytes = uploaded_file.getvalue()
                         raw_text = extract_text_from_pdf(pdf_bytes)
+
                         if not raw_text or not raw_text.strip():
                             st.error("No text extracted. PDF might be image-based, empty, or corrupted.")
                         else:
                             text_chunks = get_text_chunks(raw_text)
                             if not text_chunks:
-                                st.error("Text extracted but could not be chunked. Document might be too short.")
+                                st.error("Text extracted but could not be chunked. Document might be too short or lack textual content.")
                             else:
                                 vector_store = get_vector_store(text_chunks, embedding_model)
                                 if vector_store:
                                     st.session_state.vector_store_data = (vector_store, text_chunks)
                                     st.session_state.pdf_processed_name = uploaded_file.name
-                                    st.session_state.chat_history = []
+                                    st.session_state.chat_history = [] # Clear history for new PDF
                                     st.success(f"'{uploaded_file.name}' processed! Ready to chat.")
                                     st.rerun()
                                 else:
-                                    st.error("Failed to create vector store for the PDF.")
+                                    st.error("Failed to create vector store for the PDF. Document processing aborted.")
                     except Exception as e:
                         st.error(f"Critical error during PDF processing: {e}")
-                        st.session_state.pdf_processed_name = None
-    
+                        st.session_state.pdf_processed_name = None # Reset if critical error
+                        st.session_state.vector_store_data = None
+
+    # Chat Interface Section
     if st.session_state.pdf_processed_name and st.session_state.vector_store_data:
         st.markdown(f"<h3 style='font-family: Poppins, sans-serif;'>Chat about: {st.session_state.pdf_processed_name}</h3>", unsafe_allow_html=True)
-        vector_store, text_chunks_global = st.session_state.vector_store_data
+        
+        vector_store, text_chunks_from_store = st.session_state.vector_store_data
 
+        # Display chat history
         for message in st.session_state.chat_history:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
+        # User input
         user_question = st.chat_input(f"Ask a question about '{st.session_state.pdf_processed_name}'...", key="chat_input_main")
+
         if user_question:
+            st.session_state.chat_history.append({"role": "user", "content": user_question})
+            with st.chat_message("user"):
+                st.markdown(user_question)
+            
             if not st.session_state.google_api_key or st.session_state.google_api_key == "YOUR_GOOGLE_API_KEY_HERE":
-                st.warning("Please enter your Google API Key in the sidebar to ask questions. ⚠️")
+                error_msg = "Please enter your Google API Key in the sidebar to ask questions. 🔑"
+                st.warning(error_msg)
+                st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
+                with st.chat_message("assistant"): # Also show this in chat
+                     st.markdown(error_msg)
+
             elif embedding_model is None:
-                 st.error("Embedding model is not available. Cannot process question.")
+                error_msg = "Embedding model is not available. Cannot process question."
+                st.error(error_msg)
+                st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
+                with st.chat_message("assistant"):
+                     st.markdown(error_msg)
             else:
-                st.session_state.chat_history.append({"role": "user", "content": user_question})
-                with st.chat_message(
+                with st.chat_message("assistant"):
+                    with st.spinner("Thinking... 🤔"):
+                        try:
+                            # 1. Embed user question
+                            question_embedding = embedding_model.encode([user_question], show_progress_bar=False)
+                            if question_embedding.ndim == 1: # Ensure 2D for FAISS
+                                question_embedding = np.array([question_embedding])
+
+                            # 2. Search FAISS vector store
+                            k = 5 # Number of relevant chunks to retrieve
+                            distances, indices = vector_store.search(question_embedding.astype('float32'), k)
+                            
+                            relevant_chunks = []
+                            if indices.size > 0: # Check if any indices were returned
+                                relevant_chunks = [
+                                    text_chunks_from_store[i] for i in indices[0] 
+                                    if 0 <= i < len(text_chunks_from_store) # Safety check
+                                ]
+
+                            if not relevant_chunks:
+                                bot_response_content = "I couldn't find relevant information in the document to answer your question. Try rephrasing or asking something else."
+                            else:
+                                # 3. Construct prompt
+                                context = "\n\n".join(relevant_chunks)
+                                prompt = f"""You are a helpful AI assistant. Answer the user's question based ONLY on the provided context from a PDF document.
+If the answer is not found in the context, clearly state "I couldn't find the answer in the provided document context."
+Do not make up information or answer from your general knowledge.
+
+Context from the document:
+---
+{context}
+---
+
+User Question: {user_question}
+
+Answer:
+"""
+                                # 4. Get Gemini response
+                                bot_response_content = get_gemini_response(prompt, st.session_state.google_api_key)
+                        
+                        except Exception as e:
+                            st.error(f"Error processing your question: {e}")
+                            bot_response_content = f"Sorry, an error occurred while processing your request: {str(e)}"
+
+                        st.markdown(bot_response_content)
+                        st.session_state.chat_history.append({"role": "assistant", "content": bot_response_content})
+                        # No st.rerun() needed here, chat_input/chat_message updates UI.
+
+
+if __name__ == "__main__":
+    main()
