@@ -1,0 +1,18 @@
+[theme]
+primaryColor="#1A73E8" # Blue - For interactive elements, progress bars
+backgroundColor="#F1F3F4" # Light Grey - Main app background
+secondaryBackgroundColor="#FFFFFF" # White - For cards, chat messages, input backgrounds
+textColor="#202124" # Near Black - Primary text color
+font="sans serif" # Base font, custom fonts (Inter, Poppins) are loaded via style.css
+
+[logger]
+level = "info"
+
+[runner]
+magicEnabled = true
+
+[server]
+# port = 9000 # Set in startup.sh
+# headless = true # Set in startup.sh
+# enableCORS = true # Default is true, can be overridden by startup.sh
+# enableXsrfProtection = true # Default is true
